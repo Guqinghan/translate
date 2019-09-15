@@ -37,4 +37,4 @@
 		....
 	];
 
-	var t = new Translate(interface, 1);
+	var t = new Translate(interface);
