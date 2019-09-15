@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="translate.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <p>hello world</p>
+    <p>你好，JavaScript</p>
+    <p>我爱你，中国</p>
+  </body>
+  <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdn.bootcss.com/blueimp-md5/2.12.0/js/md5.min.js"></script>
+  <script src="https://cdn.bootcss.com/js-sha256/0.9.0/sha256.js"></script>
+  <script src="https://cdn.bootcss.com/layer/2.3/layer.js"></script>
+  <script src="translate.js"></script>
+  <script>
+    var interface = [
+      {
+        name: "百度",
+        api: "https://fanyi-api.baidu.com/api/trans/vip/translate",
+        data: function(text) {
+          var appid = "xxxx";
+          var key = "xxxx";
+          var salt = new Date().getTime();
+          var query = text;
+          var transfer = Translate.getTransfer(text);
+          var str1 = appid + query + salt + key;
+          var sign = md5(str1);
+          return {
+            q: query,
+            from: transfer.from,
+            to: transfer.to,
+            appid: appid,
+            salt: salt,
+            sign: sign
+          };
+        },
+        parse: function(resData) {
+          if (resData.trans_result) {
+            var result = resData.trans_result[0].dst;
+            return (
+              result +
+              '<span style="position: absolute;bottom: 2px;right: 2px;font-size:0.5rem;color: #888888;">SYL的笔记.' +
+              this.name +
+              "</span>"
+            );
+          }
+        },
+        next:1
+      },
+      {
+        name: "有道",
+        api: "https://openapi.youdao.com/api",
+        data: function(text) {
+          var appKey = "xxxxx";
+          var key = "xxxxx";
+          var salt = new Date().getTime();
+          var curTime = Math.round(new Date().getTime() / 1000);
+          var transfer = Translate.getTransfer(text);
+          var str1 = appKey + Translate.truncate(text) + salt + curTime + key;
+          var sign = sha256(str1); //需引入sha256.js
+          return {
+            q: text,
+            appKey: appKey,
+            salt: salt,
+            from: transfer.from,
+            to: transfer.to,
+            sign: sign,
+            signType: "v3",
+            curtime: curTime
+          };
+        },
+        parse: function(resData) {
+          var html = "";
+          if (resData.basic) {
+            html +=
+              '<div style="text-align:center;font-weight:bold;font-size:1.5rem;margin-bottom:10px">' +
+              resData.query +
+              "</div>";
+            if (
+              resData.basic["us-speech"] &&
+              resData.basic["uk-speech"] &&
+              resData.basic["us-phonetic"] &&
+              resData.basic["uk-phonetic"]
+            ) {
+              html +=
+                '<span data-link="' +
+                resData.basic["us-speech"] +
+                '">美：[' +
+                resData.basic["us-phonetic"] +
+                "]</span>" +
+                Translate.voiceIcon +
+                '<span data-link="' +
+                resData.basic["uk-speech"] +
+                '">英：[' +
+                resData.basic["uk-phonetic"] +
+                "]</span>" +
+                Translate.voiceIcon;
+            } else if (resData.basic["phonetic"]) {
+              html += "<span>[" + resData.basic["phonetic"] + "]<span>";
+            }
+            resData.basic.explains.forEach(element => {
+              html += "<br/>" + element;
+            });
+          } else if (resData.translation) {
+            html += resData.translation[0];
+          }
+          return (
+            html +
+            '<span style="position: absolute;bottom: 2px;right: 2px;font-size:0.5rem;color: #888888;">SYL的笔记.' +
+            this.name +
+            "</span>"
+          );
+        },
+        next: 0
+      }
+    ];
+
+    var t = new Translate(interface, 1);
+  </script>
+</html>
